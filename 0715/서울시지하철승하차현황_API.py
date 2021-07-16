@@ -50,21 +50,23 @@ def seoul_sw_pandas(seoul_sw_soup):
 # 시작일부터 종료일까지의 날짜문자 리스트를 이용해 전체 일자별 데이터 조회 pandas.concat()을 이용한 행추가
 def main_api(sDt, eDt):
     # pd.date_range(start=staDate, end=endDate) : 시작일부터 종료일까지 날짜 생성, 시작일/종료일=>문자형
-    dt_index = pd.date_range(start=sDt, end=eDt)
+    dt_index = pd.date_range(start=str(sDt), end=str(eDt))
     dtList = dt_index.strftime("%Y%m%d").tolist()  # 날짜형을 문자형으로 변경후 리스트형으로 저장
 
     df0 = pd.DataFrame()  # 전체 데이터 저장 변수
 
     for sDt in tqdm(dtList, desc="진행율: "):
         seoul_sw_soup = url_print(sDt)  # 한페이지에 5개의 데이터가 출력된 url 정보 가져오기
-        if seoul_sw_soup.find('code').text == "INFO-200":
+        #if seoul_sw_soup.find('code').text == "INFO-200":
+        #    continue
+        try:
+            uRow = seoul_sw_soup.find('list_total_count').text  # 조회된 전체 데이터 개수 추출하기
+            seoul_sw_soup = url_print(sDt, uRow)  # 한페이지에 추출한 전체 데이터 출력 url 정보 가져오기
+            df = seoul_sw_pandas(seoul_sw_soup)  # 요청 데이터에 대한 DataFrame 형식으로 변경하기
+            df0 = pd.concat([df0, df], ignore_index=True)  # ignore_index=True: 인덱스 재배열(재설정)
+        except:
             continue
-        uRow = seoul_sw_soup.find('list_total_count').text  # 조회된 전체 데이터 개수 추출하기
-        seoul_sw_soup = url_print(sDt, uRow)  # 한페이지에 추출한 전체 데이터 출력 url 정보 가져오기
-        df = seoul_sw_pandas(seoul_sw_soup)  # 요청 데이터에 대한 DataFrame 형식으로 변경하기
-
-        df0 = pd.concat([df0, df], ignore_index=True)  # ignore_index=True: 인덱스 재배열(재설정)
-
+    print('작업완료')
     return df0
 
 
